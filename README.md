@@ -185,6 +185,10 @@ givewp-donorperfect-sync/
     test-plugin.php               # PHP plugin integration tests (WP-CLI)
 ```
 
+## Author
+
+**Ashraf Ali** — [ashrafali.net](https://ashrafali.net)
+
 ## License
 
 MIT
