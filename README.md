@@ -2,6 +2,8 @@
 
 A WordPress plugin that syncs [GiveWP](https://givewp.com/) donations to [DonorPerfect](https://www.donorperfect.com/) in real-time. Matches donors by email, handles one-time and recurring donations (via DP-native pledges), and includes a historical backfill tool with comprehensive logging.
 
+![GiveWP2DP Dashboard](screenshot.jpg)
+
 ## Features
 
 - **Real-time sync** — automatically pushes new GiveWP donations to DonorPerfect (disabled by default for safety)
