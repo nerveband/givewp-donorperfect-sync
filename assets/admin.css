@@ -259,3 +259,79 @@
 .gwdp-docs-table th {
     padding: 8px 12px;
 }
+
+/* Info tooltips */
+.gwdp-info {
+    display: inline-block;
+    position: relative;
+    cursor: help;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+.gwdp-info .gwdp-info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #0073aa;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 1;
+}
+.gwdp-info .gwdp-info-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    padding: 10px 12px;
+    background: #1d2327;
+    color: #f0f0f1;
+    font-size: 12.5px;
+    line-height: 1.5;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    z-index: 100;
+    font-weight: 400;
+}
+.gwdp-info .gwdp-info-tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #1d2327;
+}
+.gwdp-info:hover .gwdp-info-tip,
+.gwdp-info:focus .gwdp-info-tip {
+    display: block;
+}
+/* Right-align tooltip when near left edge */
+.gwdp-info-tip.gwdp-tip-right {
+    left: 0;
+    transform: none;
+}
+.gwdp-info-tip.gwdp-tip-right::after {
+    left: 12px;
+    transform: none;
+}
+
+/* Help text blocks under sections */
+.gwdp-help-text {
+    background: #f0f6fc;
+    border-left: 3px solid #0073aa;
+    padding: 8px 12px;
+    margin: 8px 0 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #1d2327;
+}
+.gwdp-help-text strong {
+    color: #0073aa;
+}

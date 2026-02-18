@@ -94,43 +94,45 @@ class GWDP_Admin_Page {
         ?>
         <div class="gwdp-status-banner <?php echo $enabled ? 'gwdp-status-on' : 'gwdp-status-off'; ?>">
             <strong>Real-time sync is <?php echo $enabled ? 'ON' : 'OFF'; ?></strong>
-            <?php if (!$enabled): ?>
-                <span>— New donations are NOT being synced. <a href="?page=gwdp-sync&tab=settings">Enable in Settings</a></span>
+            <?php if ($enabled): ?>
+                <span>— New donations are automatically being sent to DonorPerfect.</span>
+            <?php else: ?>
+                <span>— New donations are NOT being synced. Your donor data is safe. <a href="?page=gwdp-sync&tab=settings">Enable in Settings</a></span>
             <?php endif; ?>
         </div>
 
         <div class="gwdp-stats-grid">
             <div class="gwdp-stat-card">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['success']); ?></div>
-                <div class="gwdp-stat-label">Synced</div>
+                <div class="gwdp-stat-label">Synced<?php echo $this->info('Donations successfully sent to DonorPerfect. Each synced donation has a matching gift record in DP.'); ?></div>
             </div>
             <div class="gwdp-stat-card gwdp-stat-error">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['error']); ?></div>
-                <div class="gwdp-stat-label">Errors</div>
+                <div class="gwdp-stat-label">Errors<?php echo $this->info('Donations that failed to sync. Check the Sync Log tab for details. Common causes: API connection issues, missing codes in DP, or invalid data.'); ?></div>
             </div>
             <div class="gwdp-stat-card">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['skipped']); ?></div>
-                <div class="gwdp-stat-label">Skipped</div>
+                <div class="gwdp-stat-label">Skipped<?php echo $this->info('Donations that were already synced or had no valid data to send. These are safe to ignore.'); ?></div>
             </div>
             <div class="gwdp-stat-card">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['donors_created']); ?></div>
-                <div class="gwdp-stat-label">Donors Created</div>
+                <div class="gwdp-stat-label">Donors Created<?php echo $this->info('New donor records created in DonorPerfect because no existing donor with the same email was found.'); ?></div>
             </div>
             <div class="gwdp-stat-card">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['donors_matched']); ?></div>
-                <div class="gwdp-stat-label">Donors Matched</div>
+                <div class="gwdp-stat-label">Donors Matched<?php echo $this->info('Donations linked to existing DonorPerfect donors by matching email address. No duplicate donor was created.'); ?></div>
             </div>
             <div class="gwdp-stat-card">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['pledges_created']); ?></div>
-                <div class="gwdp-stat-label">Pledges Created</div>
+                <div class="gwdp-stat-label">Recurring Groups<?php echo $this->info('DonorPerfect "pledges" created to group recurring payments together. Each GiveWP subscription gets one pledge, and all its payments are linked under it. This is just an organizational grouping in DP -- it does not track a fundraising goal.'); ?></div>
             </div>
             <div class="gwdp-stat-card">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['recurring_gifts']); ?></div>
-                <div class="gwdp-stat-label">Recurring Gifts</div>
+                <div class="gwdp-stat-label">Recurring Gifts<?php echo $this->info('Individual recurring donation payments synced to DP. Each monthly (or periodic) payment from a GiveWP subscription becomes one gift in DonorPerfect.'); ?></div>
             </div>
             <div class="gwdp-stat-card">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['onetime_gifts']); ?></div>
-                <div class="gwdp-stat-label">One-Time Gifts</div>
+                <div class="gwdp-stat-label">One-Time Gifts<?php echo $this->info('Single, non-recurring donations synced to DonorPerfect.'); ?></div>
             </div>
         </div>
 
@@ -179,9 +181,10 @@ class GWDP_Admin_Page {
             <?php wp_nonce_field('gwdp_save_settings', 'gwdp_settings_nonce'); ?>
 
             <h2>Sync Control</h2>
+            <div class="gwdp-help-text"><strong>Safe by default:</strong> Real-time sync is OFF when you first install. No donor data will be sent to DonorPerfect until you explicitly turn it on. Use Preview and Match Report to verify everything first.</div>
             <table class="form-table">
                 <tr>
-                    <th>Real-Time Sync</th>
+                    <th>Real-Time Sync<?php echo $this->info('Controls whether new donations are automatically sent to DonorPerfect as they come in. When OFF, donations are only recorded in GiveWP. You can always sync past donations later using the Backfill tab.'); ?></th>
                     <td>
                         <label>
                             <input type="checkbox" name="gwdp_sync_enabled" value="1" <?php checked($enabled, '1'); ?>>
@@ -195,14 +198,14 @@ class GWDP_Admin_Page {
             <h2>DonorPerfect API</h2>
             <table class="form-table">
                 <tr>
-                    <th>API Key</th>
+                    <th>API Key<?php echo $this->info('Your DonorPerfect XML API key. Find it in DonorPerfect under Admin > My Settings > API Keys. This key is stored securely in your WordPress database and is never shared externally.'); ?></th>
                     <td>
                         <input type="password" name="gwdp_api_key" value="<?php echo esc_attr($api_key); ?>" class="regular-text" autocomplete="off">
                         <button type="button" class="button" id="gwdp-toggle-key">Show</button>
                     </td>
                 </tr>
                 <tr>
-                    <th>Connection Tests</th>
+                    <th>Connection Tests<?php echo $this->info('Test your connection before syncing any data. "Test API Connection" checks that your API key works. "Validate Codes" checks that required codes (GL, campaign, ONETIME, RECURRING) exist in DonorPerfect.'); ?></th>
                     <td>
                         <button type="button" class="button" id="gwdp-test-api">Test API Connection</button>
                         <button type="button" class="button" id="gwdp-test-codes">Validate Codes</button>
@@ -212,23 +215,24 @@ class GWDP_Admin_Page {
             </table>
 
             <h2>Default Field Mapping</h2>
+            <div class="gwdp-help-text">These codes tell DonorPerfect how to categorize each gift. They must already exist in your DonorPerfect system (DPCODES table). Use the <strong>Validate Codes</strong> button above to check.</div>
             <table class="form-table">
                 <tr>
-                    <th>GL Code</th>
+                    <th>GL Code<?php echo $this->info('The General Ledger code determines which accounting fund receives the donation in DonorPerfect. Common examples: "UN" for Unrestricted, "GF" for General Fund. Ask your accountant or DP admin if unsure.'); ?></th>
                     <td>
                         <input type="text" name="gwdp_default_gl_code" value="<?php echo esc_attr($gl_code); ?>" class="small-text" placeholder="UN">
                         <p class="description">DonorPerfect GL code for donations (e.g. UN for Unrestricted). Must exist in DPCODES.</p>
                     </td>
                 </tr>
                 <tr>
-                    <th>Campaign</th>
+                    <th>Campaign<?php echo $this->info('Links donations to a specific campaign or fund drive in DonorPerfect. Leave blank if you do not use campaigns. If set, this code must already exist in DonorPerfect.'); ?></th>
                     <td>
                         <input type="text" name="gwdp_default_campaign" value="<?php echo esc_attr($campaign); ?>" class="regular-text" placeholder="Leave blank for none">
                         <p class="description">DonorPerfect campaign code. Must exist in DPCODES. Leave blank for none.</p>
                     </td>
                 </tr>
                 <tr>
-                    <th>Solicit Code</th>
+                    <th>Solicit Code<?php echo $this->info('An optional high-level solicit code for all donations. The sub-solicit code is set automatically: ONETIME for single gifts, RECURRING for subscription payments. Leave blank if not needed.'); ?></th>
                     <td>
                         <input type="text" name="gwdp_default_solicit_code" value="<?php echo esc_attr($solicit); ?>" class="regular-text" placeholder="Leave blank for none">
                         <p class="description">Sub-solicit code is set automatically: ONETIME or RECURRING.</p>
@@ -236,7 +240,7 @@ class GWDP_Admin_Page {
                 </tr>
             </table>
 
-            <h2>Gateway → Gift Type Mapping</h2>
+            <h2>Gateway &rarr; Gift Type Mapping<?php echo $this->info('Maps how donors paid (Stripe, PayPal, etc.) to DonorPerfect gift type codes. This helps your team see payment methods in DP reports. Common mappings: stripe=CC, paypal=PAYPAL, manual=CK (check).'); ?></h2>
             <p class="description">Map GiveWP payment gateways to DonorPerfect gift type codes (CC, PAYPAL, CK, ACH, etc.)</p>
             <table class="widefat gwdp-gateway-map" id="gwdp-gateway-table">
                 <thead>
@@ -268,7 +272,7 @@ class GWDP_Admin_Page {
         $offset = ($page_num - 1) * $per_page;
         $rows = $sync->get_log($per_page, $offset, $filter);
         ?>
-        <h2>Sync Log</h2>
+        <h2>Sync Log<?php echo $this->info('A record of every donation sync attempt. Shows whether each donation was successfully sent to DonorPerfect, along with the DP donor and gift IDs assigned. Use the filters to find specific entries.'); ?></h2>
         <div class="gwdp-log-filters">
             <a href="?page=gwdp-sync&tab=log" class="button <?php echo $filter === '' ? 'button-primary' : ''; ?>">All</a>
             <a href="?page=gwdp-sync&tab=log&status=success" class="button <?php echo $filter === 'success' ? 'button-primary' : ''; ?>">Success</a>
@@ -294,7 +298,8 @@ class GWDP_Admin_Page {
         $total_give = $sync->get_give_donation_count();
         $stats = $sync->get_stats();
         ?>
-        <h2>Historical Backfill</h2>
+        <h2>Historical Backfill<?php echo $this->info('Use this tool to sync donations that were made before the plugin was installed, or while real-time sync was turned off. It processes past donations in small batches to avoid overloading your server or the DP API.'); ?></h2>
+        <div class="gwdp-help-text"><strong>No data is changed in GiveWP.</strong> Backfill only creates records in DonorPerfect. Your GiveWP donation data is never modified. Donations that were already synced are automatically skipped.</div>
 
         <div class="gwdp-backfill-info">
             <p><strong>GiveWP donations:</strong> <?php echo esc_html($total_give); ?> total</p>
@@ -303,12 +308,12 @@ class GWDP_Admin_Page {
         </div>
 
         <div class="gwdp-backfill-controls">
-            <h3>Step 1: Preview (Dry Run)</h3>
-            <p>See what would happen without making any changes.</p>
+            <h3>Step 1: Preview (Dry Run)<?php echo $this->info('The preview shows you exactly what would happen for each donation -- which donors would be matched or created, whether a recurring group would be set up -- without actually sending anything to DonorPerfect. Always run this first.'); ?></h3>
+            <p>See what would happen without making any changes. <strong>Nothing is sent to DonorPerfect during preview.</strong></p>
             <button type="button" class="button button-secondary" id="gwdp-backfill-preview">Run Preview (50 donations)</button>
 
-            <h3>Step 2: Sync</h3>
-            <p>Send donations to DonorPerfect in batches of 10 (with 200ms delay between each).</p>
+            <h3>Step 2: Sync<?php echo $this->info('This sends donations to DonorPerfect for real. Donations are processed in small batches of 10 with a short pause between each to be gentle on the API. You can stop at any time -- donations already synced in previous batches will remain in DP.'); ?></h3>
+            <p>Send donations to DonorPerfect in batches of 10 (with a short pause between each).</p>
             <button type="button" class="button button-primary" id="gwdp-backfill-run" disabled>Start Backfill</button>
             <button type="button" class="button" id="gwdp-backfill-stop" style="display:none;">Stop</button>
         </div>
@@ -325,12 +330,16 @@ class GWDP_Admin_Page {
             <p class="description">Run a preview or backfill to see results here.</p>
         </div>
 
-        <h3>Sync Single Donation</h3>
+        <hr style="margin: 24px 0;">
+
+        <h3>Sync a Single Donation<?php echo $this->info('Use this to manually sync one specific donation by its GiveWP ID number. Helpful for testing, retrying a failed donation, or syncing a donation that was missed. The donation ID is the number shown in the GiveWP Donations list.'); ?></h3>
+        <p>Enter a GiveWP donation ID to sync just that one donation to DonorPerfect. Useful for retrying a failed sync or testing with a single record.</p>
         <div class="gwdp-single-sync">
-            <input type="number" id="gwdp-single-id" placeholder="GiveWP Donation ID" min="1">
+            <input type="number" id="gwdp-single-id" placeholder="e.g. 1234" min="1">
             <button type="button" class="button" id="gwdp-sync-single">Sync This Donation</button>
             <span id="gwdp-single-result"></span>
         </div>
+        <p class="description">Find donation IDs in <strong>GiveWP &rarr; Donations</strong> in your WordPress admin.</p>
         <?php
     }
 
@@ -338,9 +347,9 @@ class GWDP_Admin_Page {
 
     private function render_match(): void {
         ?>
-        <h2>Donor Match Report</h2>
-        <p>Preview how GiveWP donors will match to DonorPerfect records (by email address).</p>
-        <p class="description">This checks each GiveWP donor's email against DonorPerfect. No data is modified.</p>
+        <h2>Donor Match Report<?php echo $this->info('This is a read-only report. It checks each GiveWP donor\'s email address against DonorPerfect to show you which donors already exist in DP and which would be created as new. No data is created or modified.'); ?></h2>
+        <div class="gwdp-help-text"><strong>Read-only:</strong> This report only looks up data. It does not create, modify, or delete any records in GiveWP or DonorPerfect. Run it as many times as you like.</div>
+        <p>See how GiveWP donors will match to DonorPerfect records. Donors are matched by <strong>email address</strong>.</p>
 
         <button type="button" class="button button-primary" id="gwdp-match-report">Generate Match Report</button>
 
@@ -395,19 +404,25 @@ class GWDP_Admin_Page {
         </div>
 
         <div class="gwdp-docs-section">
-            <h3>Recurring Donations</h3>
-            <p>Recurring donations use DonorPerfect's native <strong>pledge</strong> system:</p>
+            <h3>Recurring Donations &amp; "Pledges"</h3>
+            <p>When a donor sets up a recurring donation in GiveWP (e.g. $25/month), this plugin uses DonorPerfect's <strong>pledge</strong> feature to group all of that subscription's payments together.</p>
+
+            <div class="gwdp-help-text">
+                <strong>What "pledge" means here:</strong> In DonorPerfect, a "pledge" is simply a way to group related recurring payments under one record. It does <em>not</em> mean the donor has pledged a specific total amount. GiveWP recurring donations are <strong>open-ended</strong> &mdash; the donor gives monthly (or at another interval) until they cancel. There is no target amount or fulfillment date. The DP pledge is set to <code>total=0</code> (open-ended) to reflect this.
+            </div>
+
+            <p><strong>How it works:</strong></p>
             <ol>
-                <li><strong>First payment:</strong> Creates a DP pledge (open-ended, <code>total=0</code>) + a gift linked to that pledge</li>
-                <li><strong>Renewal payments:</strong> Creates a new gift linked to the existing pledge via <code>plink</code></li>
+                <li><strong>First payment:</strong> Creates a DP pledge to represent the subscription, plus a gift linked to that pledge</li>
+                <li><strong>Renewal payments:</strong> Each subsequent payment creates a new gift linked to the same pledge, so they're all grouped together</li>
             </ol>
-            <p>The plugin maps GiveWP subscription IDs to DP pledge IDs so renewals are correctly linked.</p>
+            <p>The plugin remembers which GiveWP subscription maps to which DP pledge, so renewals are always linked correctly.</p>
 
             <table class="widefat gwdp-docs-table">
-                <thead><tr><th>GiveWP Event</th><th>DP Action</th><th>Sub-Solicit</th></tr></thead>
+                <thead><tr><th>GiveWP Event</th><th>DonorPerfect Action</th><th>Sub-Solicit</th></tr></thead>
                 <tbody>
                     <tr><td>One-time donation</td><td>Create gift</td><td>ONETIME</td></tr>
-                    <tr><td>First recurring payment</td><td>Create pledge + linked gift</td><td>RECURRING</td></tr>
+                    <tr><td>First recurring payment</td><td>Create pledge (recurring group) + linked gift</td><td>RECURRING</td></tr>
                     <tr><td>Renewal payment</td><td>Create gift linked to existing pledge</td><td>RECURRING</td></tr>
                 </tbody>
             </table>
@@ -430,7 +445,7 @@ class GWDP_Admin_Page {
                     <tr><td><strong>GL Code</strong></td><td>Default General Ledger code assigned to gifts (e.g. <code>UN</code> for Unrestricted). Must exist in DP's DPCODES table.</td></tr>
                     <tr><td><strong>Campaign</strong></td><td>Default campaign code assigned to gifts. Must exist in DPCODES. Leave blank for none.</td></tr>
                     <tr><td><strong>Solicit Code</strong></td><td>Optional solicit code. Sub-solicit is set automatically (ONETIME or RECURRING).</td></tr>
-                    <tr><td><strong>Gateway Mapping</strong></td><td>Maps GiveWP payment gateways to DP gift type codes. E.g. <code>stripe</code> → <code>CC</code>, <code>paypal</code> → <code>PAYPAL</code>, <code>manual</code> → <code>CK</code>.</td></tr>
+                    <tr><td><strong>Gateway Mapping</strong></td><td>Maps how donors paid (Stripe, PayPal, etc.) to DP gift type codes so your team can see payment methods in reports. E.g. <code>stripe</code> &rarr; <code>CC</code>, <code>paypal</code> &rarr; <code>PAYPAL</code>, <code>manual</code> &rarr; <code>CK</code>.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -495,6 +510,12 @@ class GWDP_Admin_Page {
         <?php
     }
 
+    // ─── Info tooltip helper ───
+
+    private function info(string $text): string {
+        return ' <span class="gwdp-info" tabindex="0"><span class="gwdp-info-icon">i</span><span class="gwdp-info-tip">' . esc_html($text) . '</span></span>';
+    }
+
     // ─── Shared Log Table ───
 
     private function render_log_table(array $rows): void {
@@ -510,10 +531,10 @@ class GWDP_Admin_Page {
                     <th>Give #</th>
                     <th>Type</th>
                     <th>Amount</th>
-                    <th>Donor Action</th>
+                    <th>Donor Action<?php echo $this->info('"Matched" means an existing DP donor was found by email. "Created" means a new DP donor record was created.'); ?></th>
                     <th>DP Donor</th>
                     <th>DP Gift</th>
-                    <th>DP Pledge</th>
+                    <th>DP Pledge<?php echo $this->info('For recurring donations, this is the DonorPerfect pledge ID that groups all payments from this subscription together. One-time donations will not have a pledge.'); ?></th>
                     <th>Status</th>
                     <th>Error</th>
                 </tr>
