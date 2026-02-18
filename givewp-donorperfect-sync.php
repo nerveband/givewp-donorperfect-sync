@@ -3,7 +3,7 @@
  * Plugin Name: GiveWP to DonorPerfect Sync
  * Plugin URI: https://github.com/nerveband/givewp-donorperfect-sync
  * Description: Automatically syncs GiveWP donations to DonorPerfect in real-time with donor matching, backfill support, and comprehensive logging.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Ashraf Ali
  * Author URI: https://ashrafali.net
  * License: MIT
@@ -13,7 +13,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-define('GWDP_VERSION', '1.0.1');
+define('GWDP_VERSION', '1.0.2');
 define('GWDP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GWDP_PLUGIN_URL', plugin_dir_url(__FILE__));
 
