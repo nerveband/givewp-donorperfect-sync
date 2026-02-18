@@ -272,6 +272,59 @@
         });
     });
 
+    // ─── Export Log ───
+    $('#gwdp-export-log').on('click', function() {
+        var $btn = $(this);
+        $btn.prop('disabled', true).text('Exporting...');
+
+        $.post(gwdp.ajax_url, {
+            action: 'gwdp_export_log',
+            nonce: gwdp.nonce
+        }).done(function(response) {
+            if (response.success) {
+                var blob = new Blob([response.data.csv], {type: 'text/csv'});
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'givewp2dp-sync-log-' + new Date().toISOString().slice(0,10) + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else {
+                alert('Export failed: ' + (response.data || 'Unknown error'));
+            }
+        }).fail(function() {
+            alert('Export request failed.');
+        }).always(function() {
+            $btn.prop('disabled', false).text('Export CSV');
+        });
+    });
+
+    // ─── Clear Log ───
+    $('#gwdp-clear-log').on('click', function() {
+        if (!confirm('Are you sure you want to clear the entire sync log? This cannot be undone.')) return;
+
+        var $btn = $(this);
+        $btn.prop('disabled', true);
+
+        $.post(gwdp.ajax_url, {
+            action: 'gwdp_clear_log',
+            nonce: gwdp.nonce
+        }).done(function(response) {
+            if (response.success) {
+                alert('Cleared ' + response.data.cleared + ' log entries.');
+                location.reload();
+            } else {
+                alert('Failed: ' + (response.data || 'Unknown error'));
+            }
+        }).fail(function() {
+            alert('Request failed.');
+        }).always(function() {
+            $btn.prop('disabled', false);
+        });
+    });
+
     // ─── Match Report ───
     $('#gwdp-match-report').on('click', function() {
         var $btn = $(this);

@@ -31,6 +31,8 @@ class GWDP_Donation_Sync {
         add_action('wp_ajax_gwdp_backfill_run', [$this, 'ajax_backfill_run']);
         add_action('wp_ajax_gwdp_sync_single', [$this, 'ajax_sync_single']);
         add_action('wp_ajax_gwdp_match_report', [$this, 'ajax_match_report']);
+        add_action('wp_ajax_gwdp_clear_log', [$this, 'ajax_clear_log']);
+        add_action('wp_ajax_gwdp_export_log', [$this, 'ajax_export_log']);
     }
 
     // ─── Activation ───
@@ -355,6 +357,7 @@ class GWDP_Donation_Sync {
             'synced_at'           => current_time('mysql'),
         ]);
 
+        $data['give_donation_id'] = $donation_id;
         return $data;
     }
 
@@ -582,6 +585,41 @@ class GWDP_Donation_Sync {
             'new'     => count(array_filter($report, fn($r) => $r['dp_donor_id'] === null)),
             'donors'  => $report,
         ]);
+    }
+
+    public function ajax_clear_log(): void {
+        check_ajax_referer('gwdp_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'gwdp_sync_log';
+        $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+        $wpdb->query("TRUNCATE TABLE {$table}");
+        wp_send_json_success(['cleared' => $count]);
+    }
+
+    public function ajax_export_log(): void {
+        check_ajax_referer('gwdp_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'gwdp_sync_log';
+        $rows = $wpdb->get_results("SELECT * FROM {$table} ORDER BY synced_at DESC", ARRAY_A);
+
+        $headers = ['ID', 'Give Donation ID', 'Give Donor ID', 'Give Subscription ID', 'DP Donor ID', 'DP Gift ID', 'DP Pledge ID', 'Donor Action', 'Donation Type', 'Amount', 'Status', 'Error Message', 'Synced At'];
+
+        $csv_lines = [];
+        $csv_lines[] = implode(',', $headers);
+        foreach ($rows as $row) {
+            $csv_lines[] = implode(',', array_map(function($val) {
+                if ($val === null) return '';
+                $val = str_replace('"', '""', (string) $val);
+                return strpos($val, ',') !== false || strpos($val, '"') !== false || strpos($val, "\n") !== false
+                    ? '"' . $val . '"' : $val;
+            }, array_values($row)));
+        }
+
+        wp_send_json_success(['csv' => implode("\n", $csv_lines), 'count' => count($rows)]);
     }
 
     // ─── Backfill ───

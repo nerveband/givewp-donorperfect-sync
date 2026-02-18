@@ -24,14 +24,15 @@ class GWDP_Admin_Page {
     }
 
     public function add_menu(): void {
+        // Place right after GiveWP's menu (priority 25.1 → appears just below it)
         add_menu_page(
-            'Give2DP',
-            'Give2DP',
+            'GiveWP2DP',
+            'GiveWP2DP',
             'manage_options',
             'gwdp-sync',
             [$this, 'render_page'],
             'dashicons-update',
-            80
+            25.1
         );
     }
 
@@ -275,11 +276,17 @@ class GWDP_Admin_Page {
         $rows = $sync->get_log($per_page, $offset, $filter);
         ?>
         <h2>Sync Log<?php echo $this->info('A record of every donation sync attempt. Shows whether each donation was successfully sent to DonorPerfect, along with the DP donor and gift IDs assigned. Use the filters to find specific entries.'); ?></h2>
-        <div class="gwdp-log-filters">
-            <a href="?page=gwdp-sync&tab=log" class="button <?php echo $filter === '' ? 'button-primary' : ''; ?>">All</a>
-            <a href="?page=gwdp-sync&tab=log&status=success" class="button <?php echo $filter === 'success' ? 'button-primary' : ''; ?>">Success</a>
-            <a href="?page=gwdp-sync&tab=log&status=error" class="button <?php echo $filter === 'error' ? 'button-primary' : ''; ?>">Errors</a>
-            <a href="?page=gwdp-sync&tab=log&status=skipped" class="button <?php echo $filter === 'skipped' ? 'button-primary' : ''; ?>">Skipped</a>
+        <div class="gwdp-log-actions">
+            <div class="gwdp-log-filters">
+                <a href="?page=gwdp-sync&tab=log" class="button <?php echo $filter === '' ? 'button-primary' : ''; ?>">All</a>
+                <a href="?page=gwdp-sync&tab=log&status=success" class="button <?php echo $filter === 'success' ? 'button-primary' : ''; ?>">Success</a>
+                <a href="?page=gwdp-sync&tab=log&status=error" class="button <?php echo $filter === 'error' ? 'button-primary' : ''; ?>">Errors</a>
+                <a href="?page=gwdp-sync&tab=log&status=skipped" class="button <?php echo $filter === 'skipped' ? 'button-primary' : ''; ?>">Skipped</a>
+            </div>
+            <div class="gwdp-log-tools">
+                <button type="button" class="button" id="gwdp-export-log">Export CSV</button>
+                <button type="button" class="button gwdp-btn-danger" id="gwdp-clear-log">Clear Log</button>
+            </div>
         </div>
         <?php $this->render_log_table($rows); ?>
 
@@ -521,29 +528,45 @@ class GWDP_Admin_Page {
             return;
         }
         $md = file_get_contents($file);
-        // Simple markdown-to-HTML: headings, lists, bold, code, links
         $lines = explode("\n", $md);
         echo '<div class="gwdp-docs">';
+        $in_list = false;
+        $in_section = false;
         foreach ($lines as $line) {
             $line = trim($line);
             if ($line === '') {
                 continue;
             } elseif (str_starts_with($line, '# ')) {
+                if ($in_list) { echo '</ul>'; $in_list = false; }
+                if ($in_section) { echo '</div>'; $in_section = false; }
                 echo '<h2>' . esc_html(substr($line, 2)) . '</h2>';
             } elseif (str_starts_with($line, '## ')) {
+                if ($in_list) { echo '</ul>'; $in_list = false; }
+                if ($in_section) { echo '</div>'; $in_section = false; }
                 echo '<div class="gwdp-docs-section"><h3>' . esc_html(substr($line, 3)) . '</h3>';
+                $in_section = true;
             } elseif (str_starts_with($line, '### ')) {
-                echo '<h4 style="margin:12px 0 4px;color:#1d2327;">' . esc_html(substr($line, 4)) . '</h4><ul>';
+                if ($in_list) { echo '</ul>'; $in_list = false; }
+                echo '<h4 style="margin:12px 0 4px;color:#1d2327;">' . esc_html(substr($line, 4)) . '</h4>';
+                echo '<ul>';
+                $in_list = true;
             } elseif (str_starts_with($line, '- ')) {
+                if (!$in_list) { echo '<ul>'; $in_list = true; }
                 $text = substr($line, 2);
-                $text = preg_replace('/`([^`]+)`/', '<code>$1</code>', esc_html($text));
-                $text = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $text);
+                $text = preg_replace('/\*\*([^*]+)\*\*/', "\x00STRONG\x01\\1\x00/STRONG\x01", $text);
+                $text = preg_replace('/`([^`]+)`/', "\x00CODE\x01\\1\x00/CODE\x01", $text);
+                $text = esc_html($text);
+                $text = str_replace(["\x00STRONG\x01", "\x00/STRONG\x01"], ['<strong>', '</strong>'], $text);
+                $text = str_replace(["\x00CODE\x01", "\x00/CODE\x01"], ['<code>', '</code>'], $text);
                 echo '<li>' . $text . '</li>';
             } else {
+                if ($in_list) { echo '</ul>'; $in_list = false; }
                 echo '<p>' . esc_html($line) . '</p>';
             }
         }
-        echo '</ul></div></div>';
+        if ($in_list) echo '</ul>';
+        if ($in_section) echo '</div>';
+        echo '</div>';
     }
 
     // ─── Info tooltip helper ───

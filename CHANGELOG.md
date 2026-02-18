@@ -2,6 +2,16 @@
 
 All notable changes to the GiveWP2DP plugin will be documented here.
 
+## [1.2.0] - 2026-02-18
+
+### Added
+- **Export CSV** button on Sync Log tab to download the full log as a CSV file
+- **Clear Log** button on Sync Log tab to reset the log (with confirmation)
+
+### Fixed
+- DonorPerfect API URL encoding bug that caused all gift creations to fail with "user not authorized" during backfill (WordPress `add_query_arg()` was encoding `@` and `'` characters)
+- Changelog tab nesting/rendering issue where sections displayed incorrectly
+
 ## [1.1.0] - 2026-02-18
 
 ### Changed

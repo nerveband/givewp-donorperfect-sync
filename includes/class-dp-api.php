@@ -32,11 +32,8 @@ class GWDP_DP_API {
             }
         }
 
-        $url = add_query_arg([
-            'apikey' => $this->api_key,
-            'action' => $action,
-            'params' => implode(',', $param_parts),
-        ], $this->base_url);
+        $params_str = implode(',', $param_parts);
+        $url = "{$this->base_url}?apikey={$this->api_key}&action={$action}&params=" . rawurlencode($params_str);
 
         return $this->execute($url);
     }
@@ -45,10 +42,7 @@ class GWDP_DP_API {
      * Execute a direct SQL query (SELECT/UPDATE only).
      */
     public function query(string $sql): SimpleXMLElement|WP_Error {
-        $url = add_query_arg([
-            'apikey' => $this->api_key,
-            'action' => $sql,
-        ], $this->base_url);
+        $url = "{$this->base_url}?apikey={$this->api_key}&action=" . urlencode($sql);
 
         return $this->execute($url);
     }

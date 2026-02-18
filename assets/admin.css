@@ -143,12 +143,30 @@
     color: #1a73e8;
 }
 
-/* Log filters */
-.gwdp-log-filters {
+/* Log actions toolbar */
+.gwdp-log-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin: 12px 0;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 .gwdp-log-filters .button {
     margin-right: 4px;
+}
+.gwdp-log-tools {
+    display: flex;
+    gap: 6px;
+}
+.gwdp-btn-danger {
+    color: #a00 !important;
+    border-color: #a00 !important;
+}
+.gwdp-btn-danger:hover {
+    background: #dc3232 !important;
+    color: #fff !important;
+    border-color: #dc3232 !important;
 }
 
 /* Pagination */
