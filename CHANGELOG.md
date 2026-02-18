@@ -1,6 +1,13 @@
 # Changelog
 
-All notable changes to the GiveWP to DonorPerfect Sync plugin will be documented here.
+All notable changes to the GiveWP2DP plugin will be documented here.
+
+## [1.1.0] - 2026-02-18
+
+### Changed
+- Renamed plugin from "GiveWP to DonorPerfect Sync" to **GiveWP2DP**
+- Renamed GitHub repo from `givewp-donorperfect-sync` to `givewp2dp`
+- Updated all references and auto-updater to use new repo name
 
 ## [1.0.2] - 2026-02-18
 

@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: GiveWP to DonorPerfect Sync
- * Plugin URI: https://github.com/nerveband/givewp-donorperfect-sync
+ * Plugin Name: GiveWP2DP
+ * Plugin URI: https://github.com/nerveband/givewp2dp
  * Description: Automatically syncs GiveWP donations to DonorPerfect in real-time with donor matching, backfill support, and comprehensive logging.
- * Version: 1.0.2
+ * Version: 1.1.0
  * Author: Ashraf Ali
  * Author URI: https://ashrafali.net
  * License: MIT
@@ -13,7 +13,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-define('GWDP_VERSION', '1.0.2');
+define('GWDP_VERSION', '1.1.0');
 define('GWDP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GWDP_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -27,7 +27,7 @@ register_activation_hook(__FILE__, ['GWDP_Donation_Sync', 'activate']);
 add_action('plugins_loaded', function () {
     GWDP_Donation_Sync::instance();
     // Updater must run outside is_admin() — WP update cron runs in frontend context
-    new GWDP_GitHub_Updater(__FILE__, 'nerveband/givewp-donorperfect-sync');
+    new GWDP_GitHub_Updater(__FILE__, 'nerveband/givewp2dp');
     if (is_admin()) {
         GWDP_Admin_Page::instance();
     }

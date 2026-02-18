@@ -60,7 +60,7 @@ class GWDP_Admin_Page {
         $tab = sanitize_text_field($_GET['tab'] ?? 'dashboard');
         ?>
         <div class="wrap gwdp-wrap">
-            <h1>GiveWP → DonorPerfect Sync</h1>
+            <h1>GiveWP2DP</h1>
 
             <nav class="nav-tab-wrapper">
                 <a href="?page=gwdp-sync&tab=dashboard" class="nav-tab <?php echo $tab === 'dashboard' ? 'nav-tab-active' : ''; ?>">Dashboard</a>
@@ -502,9 +502,9 @@ class GWDP_Admin_Page {
         <div class="gwdp-docs-section">
             <h3>About</h3>
             <p>
-                <strong>GiveWP to DonorPerfect Sync</strong> v<?php echo esc_html(GWDP_VERSION); ?><br>
+                <strong>GiveWP2DP</strong> v<?php echo esc_html(GWDP_VERSION); ?><br>
                 By <a href="https://ashrafali.net" target="_blank">Ashraf Ali</a><br>
-                <a href="https://github.com/nerveband/givewp-donorperfect-sync" target="_blank">GitHub Repository</a> &middot; MIT License
+                <a href="https://github.com/nerveband/givewp2dp" target="_blank">GitHub Repository</a> &middot; MIT License
             </p>
         </div>
 

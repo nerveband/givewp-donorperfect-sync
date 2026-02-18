@@ -1,4 +1,4 @@
-# GiveWP to DonorPerfect Sync
+# GiveWP2DP
 
 A WordPress plugin that syncs [GiveWP](https://givewp.com/) donations to [DonorPerfect](https://www.donorperfect.com/) in real-time. Matches donors by email, handles one-time and recurring donations (via DP-native pledges), and includes a historical backfill tool with comprehensive logging.
 
@@ -46,7 +46,7 @@ This plugin uses the **DonorPerfect XML API** (stored procedures + dynamic SQL).
 
 ### Download (recommended)
 
-1. Go to the [Releases](https://github.com/nerveband/givewp-donorperfect-sync/releases) page
+1. Go to the [Releases](https://github.com/nerveband/givewp2dp/releases) page
 2. Download the **Source code (zip)** from the latest release
 3. In WordPress, go to **Plugins > Add New > Upload Plugin** and upload the zip
 4. Activate the plugin
@@ -59,7 +59,7 @@ Alternatively, clone directly into your plugins directory:
 
 ```bash
 cd /path/to/wordpress/wp-content/plugins/
-git clone https://github.com/nerveband/givewp-donorperfect-sync.git
+git clone https://github.com/nerveband/givewp2dp.git
 ```
 
 > **Note:** If you install from git clone, the auto-updater will still work. When WordPress applies an update from GitHub releases, it will overwrite the cloned directory with the release version.
@@ -79,7 +79,7 @@ git clone https://github.com/nerveband/givewp-donorperfect-sync.git
 
 ### Automatic updates
 
-This plugin checks [GitHub Releases](https://github.com/nerveband/givewp-donorperfect-sync/releases) for new versions every 6 hours. When a new release is available:
+This plugin checks [GitHub Releases](https://github.com/nerveband/givewp2dp/releases) for new versions every 6 hours. When a new release is available:
 
 - You'll see an update notice on the **Plugins** page in WP Admin
 - Click **"Update Now"** to install the latest version (same as any WordPress plugin)
@@ -174,7 +174,7 @@ Tests the plugin within the WordPress environment (classes, options, database ta
 
 ```bash
 # Run via WP-CLI on the server
-wp eval-file wp-content/plugins/givewp-donorperfect-sync/tests/test-plugin.php
+wp eval-file wp-content/plugins/givewp2dp/tests/test-plugin.php
 ```
 
 ## API Gotchas
@@ -196,8 +196,8 @@ Hard-won lessons from working with the DonorPerfect XML API:
 ## File structure
 
 ```
-givewp-donorperfect-sync/
-  givewp-donorperfect-sync.php    # Main plugin file
+givewp2dp/
+  givewp2dp.php    # Main plugin file
   includes/
     class-dp-api.php              # DonorPerfect XML API client
     class-donation-sync.php       # Core sync logic, hooks, backfill

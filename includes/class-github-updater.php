@@ -118,7 +118,7 @@ class GWDP_GitHub_Updater {
         $remote_version = ltrim($release->tag_name, 'v');
 
         return (object) [
-            'name'          => 'GiveWP to DonorPerfect Sync',
+            'name'          => 'GiveWP2DP',
             'slug'          => dirname($this->slug),
             'version'       => $remote_version,
             'author'        => '<a href="https://ashrafali.net">Ashraf Ali</a>',
