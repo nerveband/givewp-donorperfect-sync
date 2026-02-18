@@ -456,6 +456,50 @@ class GWDP_Donation_Sync {
         return \Give\Donations\Models\Donation::query()->count();
     }
 
+    public function get_chart_data(): array {
+        global $wpdb;
+        $table = $wpdb->prefix . 'gwdp_sync_log';
+
+        // Amount distribution buckets
+        $amount_buckets = $wpdb->get_results(
+            "SELECT
+                CASE
+                    WHEN donation_amount < 25 THEN 'Under \$25'
+                    WHEN donation_amount < 50 THEN '\$25–\$49'
+                    WHEN donation_amount < 100 THEN '\$50–\$99'
+                    WHEN donation_amount < 250 THEN '\$100–\$249'
+                    WHEN donation_amount < 500 THEN '\$250–\$499'
+                    ELSE '\$500+'
+                END as bucket,
+                COUNT(*) as cnt,
+                SUM(donation_amount) as total_amt
+            FROM {$table} WHERE status='success'
+            GROUP BY bucket ORDER BY MIN(donation_amount)",
+            ARRAY_A
+        ) ?: [];
+
+        // Type breakdown
+        $types = $wpdb->get_results(
+            "SELECT donation_type, COUNT(*) as cnt, SUM(donation_amount) as total_amt
+             FROM {$table} WHERE status='success' GROUP BY donation_type",
+            ARRAY_A
+        ) ?: [];
+
+        // Sync timeline (last 30 days)
+        $timeline = $wpdb->get_results(
+            "SELECT DATE(synced_at) as day, COUNT(*) as cnt, SUM(donation_amount) as total_amt
+             FROM {$table} WHERE status='success'
+             GROUP BY DATE(synced_at) ORDER BY day DESC LIMIT 30",
+            ARRAY_A
+        ) ?: [];
+
+        return [
+            'amount_buckets' => $amount_buckets,
+            'types'          => $types,
+            'timeline'       => array_reverse($timeline),
+        ];
+    }
+
     // ─── AJAX Handlers ───
 
     public function ajax_test_connection(): void {

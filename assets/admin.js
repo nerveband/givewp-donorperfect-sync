@@ -2,6 +2,214 @@
 (function($) {
     'use strict';
 
+    // ─── Dashboard Charts ───
+    if (typeof gwdp !== 'undefined' && gwdp.charts && typeof Chart !== 'undefined') {
+        var c = gwdp.charts;
+
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        Chart.defaults.font.size = 12;
+        Chart.defaults.plugins.legend.position = 'bottom';
+        Chart.defaults.plugins.legend.labels.padding = 12;
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+        Chart.defaults.plugins.legend.labels.pointStyleWidth = 10;
+
+        // -- Sync Status (doughnut) --
+        var statusEl = document.getElementById('gwdp-chart-status');
+        if (statusEl) {
+            var statusChart = new Chart(statusEl, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Success', 'Errors', 'Skipped'],
+                    datasets: [{
+                        data: [c.status.success, c.status.error, c.status.skipped],
+                        backgroundColor: ['#46b450', '#dc3232', '#dba617'],
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    cutout: '60%',
+                    onClick: function(e, elements) {
+                        if (!elements.length) return;
+                        var filters = ['success', 'error', 'skipped'];
+                        window.location.href = gwdp.log_url + '&status=' + filters[elements[0].index];
+                    },
+                    onHover: function(e, elements) {
+                        e.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                    var pct = total > 0 ? Math.round(ctx.raw / total * 100) : 0;
+                                    return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // -- Donation Types (doughnut) --
+        var typesEl = document.getElementById('gwdp-chart-types');
+        if (typesEl && c.types.length) {
+            var typeLabels = { single: 'One-Time', subscription: 'Recurring (Initial)', renewal: 'Recurring (Renewal)' };
+            var typeColors = { single: '#0073aa', subscription: '#00a32a', renewal: '#72aee6' };
+            var typesChart = new Chart(typesEl, {
+                type: 'doughnut',
+                data: {
+                    labels: c.types.map(function(t) { return typeLabels[t.donation_type] || t.donation_type; }),
+                    datasets: [{
+                        data: c.types.map(function(t) { return parseInt(t.cnt); }),
+                        backgroundColor: c.types.map(function(t) { return typeColors[t.donation_type] || '#999'; }),
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    cutout: '60%',
+                    onClick: function(e, elements) {
+                        if (!elements.length) return;
+                        // Could link to filtered log by type in future
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    var amt = parseFloat(c.types[ctx.dataIndex].total_amt);
+                                    return ctx.label + ': ' + ctx.raw + ' gifts ($' + amt.toLocaleString() + ')';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // -- Donor Matching (doughnut) --
+        var donorsEl = document.getElementById('gwdp-chart-donors');
+        if (donorsEl) {
+            new Chart(donorsEl, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Matched Existing', 'Created New'],
+                    datasets: [{
+                        data: [c.donors.matched, c.donors.created],
+                        backgroundColor: ['#0073aa', '#00a32a'],
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    cutout: '60%',
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                    var pct = total > 0 ? Math.round(ctx.raw / total * 100) : 0;
+                                    return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // -- Amount Distribution (bar) --
+        var amountsEl = document.getElementById('gwdp-chart-amounts');
+        if (amountsEl && c.amount_buckets.length) {
+            new Chart(amountsEl, {
+                type: 'bar',
+                data: {
+                    labels: c.amount_buckets.map(function(b) { return b.bucket; }),
+                    datasets: [{
+                        label: 'Number of Gifts',
+                        data: c.amount_buckets.map(function(b) { return parseInt(b.cnt); }),
+                        backgroundColor: '#0073aa',
+                        borderRadius: 4,
+                        barPercentage: 0.7
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    var amt = parseFloat(c.amount_buckets[ctx.dataIndex].total_amt);
+                                    return ctx.raw + ' gifts totaling $' + amt.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 },
+                            grid: { color: '#f0f0f0' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // -- Sync Timeline (bar) --
+        var timelineEl = document.getElementById('gwdp-chart-timeline');
+        if (timelineEl && c.timeline.length) {
+            new Chart(timelineEl, {
+                type: 'bar',
+                data: {
+                    labels: c.timeline.map(function(t) {
+                        var d = new Date(t.day + 'T00:00:00');
+                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }),
+                    datasets: [{
+                        label: 'Donations Synced',
+                        data: c.timeline.map(function(t) { return parseInt(t.cnt); }),
+                        backgroundColor: '#46b450',
+                        borderRadius: 4,
+                        barPercentage: 0.7
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    var amt = parseFloat(c.timeline[ctx.dataIndex].total_amt);
+                                    return ctx.raw + ' synced ($' + amt.toLocaleString() + ')';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 },
+                            grid: { color: '#f0f0f0' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
     // ─── API Key toggle ───
     $('#gwdp-toggle-key').on('click', function() {
         var $input = $('input[name="gwdp_api_key"]');

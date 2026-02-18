@@ -2,6 +2,16 @@
 
 All notable changes to the GiveWP2DP plugin will be documented here.
 
+## [1.4.0] - 2026-02-18
+
+### Added
+- **Dashboard charts** powered by Chart.js with five interactive visualizations:
+  - **Sync Status** (doughnut) — success/error/skipped breakdown, click segments to filter Sync Log
+  - **Donation Types** (doughnut) — one-time vs recurring initial vs renewal, with dollar totals in tooltips
+  - **Donor Matching** (doughnut) — matched existing vs created new donors
+  - **Gift Amounts** (bar) — distribution of donation amounts across six buckets
+  - **Sync Timeline** (bar) — daily sync activity over the last 30 days
+
 ## [1.3.0] - 2026-02-18
 
 ### Added

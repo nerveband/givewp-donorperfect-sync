@@ -48,11 +48,37 @@ class GWDP_Admin_Page {
     public function enqueue_assets(string $hook): void {
         if ($hook !== 'toplevel_page_gwdp-sync') return;
         wp_enqueue_style('gwdp-admin', GWDP_PLUGIN_URL . 'assets/admin.css', [], GWDP_VERSION);
-        wp_enqueue_script('gwdp-admin', GWDP_PLUGIN_URL . 'assets/admin.js', ['jquery'], GWDP_VERSION, true);
-        wp_localize_script('gwdp-admin', 'gwdp', [
+        wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js', [], '4.4.7', true);
+        wp_enqueue_script('gwdp-admin', GWDP_PLUGIN_URL . 'assets/admin.js', ['jquery', 'chartjs'], GWDP_VERSION, true);
+
+        $sync = GWDP_Donation_Sync::instance();
+        $localize = [
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('gwdp_admin_nonce'),
-        ]);
+        ];
+
+        $tab = sanitize_text_field($_GET['tab'] ?? 'dashboard');
+        if ($tab === 'dashboard') {
+            $stats = $sync->get_stats();
+            $chart_data = $sync->get_chart_data();
+            $localize['charts'] = [
+                'status' => [
+                    'success' => $stats['success'],
+                    'error'   => $stats['error'],
+                    'skipped' => $stats['skipped'],
+                ],
+                'donors' => [
+                    'created' => $stats['donors_created'],
+                    'matched' => $stats['donors_matched'],
+                ],
+                'types'          => $chart_data['types'],
+                'amount_buckets' => $chart_data['amount_buckets'],
+                'timeline'       => $chart_data['timeline'],
+            ];
+            $localize['log_url'] = admin_url('admin.php?page=gwdp-sync&tab=log');
+        }
+
+        wp_localize_script('gwdp-admin', 'gwdp', $localize);
     }
 
     public function render_page(): void {
@@ -142,6 +168,34 @@ class GWDP_Admin_Page {
         <?php if ($stats['last_sync']): ?>
             <p class="gwdp-last-sync">Last successful sync: <strong><?php echo esc_html($stats['last_sync']); ?></strong></p>
         <?php endif; ?>
+
+        <div class="gwdp-charts-row">
+            <div class="gwdp-chart-card">
+                <h3>Sync Status</h3>
+                <div class="gwdp-chart-wrap gwdp-chart-doughnut"><canvas id="gwdp-chart-status"></canvas></div>
+                <p class="gwdp-chart-hint">Click a segment to view in Sync Log</p>
+            </div>
+            <div class="gwdp-chart-card">
+                <h3>Donation Types</h3>
+                <div class="gwdp-chart-wrap gwdp-chart-doughnut"><canvas id="gwdp-chart-types"></canvas></div>
+                <p class="gwdp-chart-hint">Click a segment to filter by type</p>
+            </div>
+            <div class="gwdp-chart-card">
+                <h3>Donor Matching</h3>
+                <div class="gwdp-chart-wrap gwdp-chart-doughnut"><canvas id="gwdp-chart-donors"></canvas></div>
+            </div>
+        </div>
+
+        <div class="gwdp-charts-row">
+            <div class="gwdp-chart-card gwdp-chart-wide">
+                <h3>Gift Amounts</h3>
+                <div class="gwdp-chart-wrap gwdp-chart-bar"><canvas id="gwdp-chart-amounts"></canvas></div>
+            </div>
+            <div class="gwdp-chart-card gwdp-chart-wide">
+                <h3>Sync Timeline</h3>
+                <div class="gwdp-chart-wrap gwdp-chart-bar"><canvas id="gwdp-chart-timeline"></canvas></div>
+            </div>
+        </div>
 
         <h3>Recent Activity</h3>
         <?php $this->render_log_table(GWDP_Donation_Sync::instance()->get_log(10)); ?>
