@@ -2,6 +2,24 @@
 
 All notable changes to the GiveWP2DP plugin will be documented here.
 
+## [1.3.0] - 2026-02-18
+
+### Added
+- **Server timeout notice** on Backfill tab showing PHP `max_execution_time` with guidance on how to increase it if too low
+- **Excluded donations breakdown** on Backfill tab showing abandoned/failed donations with explanations and clickable links to view them in GiveWP
+- **Auto-retry on timeout** — backfill now automatically resumes after server timeouts with exponential backoff instead of stopping
+
+### Fixed
+- Backfill stopping after ~150 donations due to PHP execution timeout — reduced batch size to 5, added `set_time_limit(300)`, and auto-retry logic
+- Backfill offset bug that was skipping unsynced donations — now always queries from offset 0 since already-synced donations are filtered by the SQL query
+- "Remaining" count on Backfill tab incorrectly included abandoned/failed donations that would never be synced
+- Server timeout display showing WordPress-modified value (60s) instead of actual php.ini value
+- Stop button now immediately aborts in-flight requests and cancels pending retry timers
+
+### Changed
+- Backfill batch size reduced from 10 to 5 for better reliability on shared hosting
+- AJAX timeout increased to 120 seconds per batch request
+
 ## [1.2.0] - 2026-02-18
 
 ### Added

@@ -310,10 +310,90 @@ class GWDP_Admin_Page {
         <h2>Historical Backfill<?php echo $this->info('Use this tool to sync donations that were made before the plugin was installed, or while real-time sync was turned off. It processes past donations in small batches to avoid overloading your server or the DP API.'); ?></h2>
         <div class="gwdp-help-text"><strong>No data is changed in GiveWP.</strong> Backfill only creates records in DonorPerfect. Your GiveWP donation data is never modified. Donations that were already synced are automatically skipped.</div>
 
+        <?php
+        global $wpdb;
+        $syncable = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}posts
+             WHERE post_type = 'give_payment'
+             AND post_status IN ('publish', 'give_subscription')"
+        );
+        $remaining = max(0, $syncable - $stats['success']);
+
+        // Get breakdown of non-syncable statuses
+        $excluded = $wpdb->get_results(
+            "SELECT post_status, COUNT(*) as cnt FROM {$wpdb->prefix}posts
+             WHERE post_type = 'give_payment'
+             AND post_status NOT IN ('publish', 'give_subscription')
+             GROUP BY post_status ORDER BY cnt DESC",
+            ARRAY_A
+        );
+        $excluded_total = array_sum(array_column($excluded, 'cnt'));
+
+        $status_labels = [
+            'abandoned'         => 'Donor started checkout but didn\'t complete payment',
+            'failed'            => 'Payment was attempted but declined or errored',
+            'pending'           => 'Payment initiated but not yet confirmed',
+            'refunded'          => 'Payment was refunded after completion',
+            'cancelled'         => 'Donation was cancelled',
+            'revoked'           => 'Donation access was revoked',
+            'give_subscription' => 'Active recurring subscription payment',
+            'preapproval'       => 'Pre-approved but not yet charged',
+        ];
+        ?>
         <div class="gwdp-backfill-info">
-            <p><strong>GiveWP donations:</strong> <?php echo esc_html($total_give); ?> total</p>
+            <p><strong>Completed donations:</strong> <?php echo esc_html($syncable); ?></p>
             <p><strong>Already synced:</strong> <?php echo esc_html($stats['success']); ?></p>
-            <p><strong>Remaining:</strong> ~<?php echo max(0, $total_give - $stats['success']); ?></p>
+            <p><strong>Remaining to sync:</strong> <?php echo $remaining; ?></p>
+            <?php if ($excluded_total > 0): ?>
+            <div class="gwdp-excluded-donations">
+                <p><strong>Not synced (<?php echo $excluded_total; ?>):</strong> These donations are excluded because they were never completed.</p>
+                <table class="widefat" style="max-width:600px;">
+                    <thead><tr><th>Status</th><th>Count</th><th>Meaning</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($excluded as $row):
+                        $status = $row['post_status'];
+                        $label = $status_labels[$status] ?? 'Unknown status';
+                        $give_url = admin_url('edit.php?post_type=give_payment&post_status=' . urlencode($status));
+                    ?>
+                        <tr>
+                            <td><a href="<?php echo esc_url($give_url); ?>"><?php echo esc_html($status); ?></a></td>
+                            <td><a href="<?php echo esc_url($give_url); ?>"><?php echo esc_html($row['cnt']); ?></a></td>
+                            <td><?php echo esc_html($label); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <?php
+        // Get the original php.ini value, not the WordPress-modified runtime value
+        $ini_all = ini_get_all();
+        $max_exec = (int) ($ini_all['max_execution_time']['global_value'] ?? ini_get('max_execution_time'));
+        $exec_class = $max_exec > 0 && $max_exec < 60 ? 'gwdp-notice-warn' : 'gwdp-notice-ok';
+        ?>
+        <div class="gwdp-server-notice <?php echo $exec_class; ?>">
+            <strong>Server timeout:</strong> <code>max_execution_time = <?php echo $max_exec; ?>s</code>
+            <?php if ($max_exec > 0 && $max_exec < 60): ?>
+                <br>Your server's PHP timeout is low (<strong><?php echo $max_exec; ?>s</strong>). Each batch syncs 5 donations, and each donation requires 1&ndash;3 API calls to DonorPerfect. If a batch exceeds this timeout, the backfill will auto-retry, but increasing the limit will make it smoother.
+                <details style="margin-top:6px;">
+                    <summary style="cursor:pointer;color:#0073aa;">How to increase the timeout</summary>
+                    <ul style="margin:8px 0 0 16px;font-size:13px;">
+                        <li><strong>cPanel / Bluehost:</strong> Go to cPanel &rarr; MultiPHP INI Editor &rarr; select your domain &rarr; set <code>max_execution_time</code> to <code>120</code> or <code>300</code></li>
+                        <li><strong>php.ini:</strong> Add <code>max_execution_time = 120</code> to your site's <code>php.ini</code> file</li>
+                        <li><strong>.htaccess:</strong> Add <code>php_value max_execution_time 120</code> to your <code>.htaccess</code> file</li>
+                        <li><strong>wp-config.php:</strong> Add <code>set_time_limit(120);</code> near the top of the file</li>
+                    </ul>
+                    <p style="font-size:13px;margin-top:6px;">A value of <strong>120</strong> (2 minutes) is recommended for backfill operations. You can lower it back after the backfill completes.</p>
+                </details>
+            <?php else: ?>
+                <?php if ($max_exec === 0): ?>
+                    &mdash; No timeout limit (unlimited). Backfill should run without issues.
+                <?php else: ?>
+                    &mdash; This should be sufficient for backfill batches.
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
 
         <div class="gwdp-backfill-controls">
@@ -321,8 +401,8 @@ class GWDP_Admin_Page {
             <p>See what would happen without making any changes. <strong>Nothing is sent to DonorPerfect during preview.</strong></p>
             <button type="button" class="button button-secondary" id="gwdp-backfill-preview">Run Preview (50 donations)</button>
 
-            <h3>Step 2: Sync<?php echo $this->info('This sends donations to DonorPerfect for real. Donations are processed in small batches of 10 with a short pause between each to be gentle on the API. You can stop at any time -- donations already synced in previous batches will remain in DP.'); ?></h3>
-            <p>Send donations to DonorPerfect in batches of 10 (with a short pause between each).</p>
+            <h3>Step 2: Sync<?php echo $this->info('This sends donations to DonorPerfect for real. Donations are processed in small batches of 5 with a short pause between each to be gentle on the API. If a batch times out, it will automatically retry. You can stop at any time -- donations already synced will remain in DP.'); ?></h3>
+            <p>Send donations to DonorPerfect in batches of 5 (with auto-retry on timeout).</p>
             <button type="button" class="button button-primary" id="gwdp-backfill-run" disabled>Start Backfill</button>
             <button type="button" class="button" id="gwdp-backfill-stop" style="display:none;">Stop</button>
         </div>

@@ -122,6 +122,9 @@
     var backfillOffset = 0;
     var backfillTotal = 0;
     var backfillProcessed = 0;
+    var backfillRetries = 0;
+    var backfillXHR = null;
+    var backfillTimer = null;
 
     $('#gwdp-backfill-run').on('click', function() {
         if (!confirm('This will send donations to DonorPerfect. Continue?')) return;
@@ -129,6 +132,7 @@
         backfillRunning = true;
         backfillOffset = 0;
         backfillProcessed = 0;
+        backfillRetries = 0;
         $(this).prop('disabled', true);
         $('#gwdp-backfill-stop').show();
         $('#gwdp-backfill-progress').show();
@@ -139,6 +143,10 @@
 
     $('#gwdp-backfill-stop').on('click', function() {
         backfillRunning = false;
+        // Abort any in-flight request
+        if (backfillXHR) { backfillXHR.abort(); backfillXHR = null; }
+        // Cancel any pending retry timer
+        if (backfillTimer) { clearTimeout(backfillTimer); backfillTimer = null; }
         $(this).hide();
         $('#gwdp-backfill-run').prop('disabled', false);
         $('.gwdp-progress-text').text('Stopped. Processed ' + backfillProcessed + ' donations.');
@@ -147,12 +155,19 @@
     function runBackfillBatch() {
         if (!backfillRunning) return;
 
-        $.post(gwdp.ajax_url, {
-            action: 'gwdp_backfill_run',
-            nonce: gwdp.nonce,
-            batch_size: 10,
-            offset: backfillOffset
+        backfillXHR = $.ajax({
+            url: gwdp.ajax_url,
+            type: 'POST',
+            timeout: 120000, // 2 minute timeout per batch
+            data: {
+                action: 'gwdp_backfill_run',
+                nonce: gwdp.nonce,
+                batch_size: 5,
+                offset: 0 // Always 0 — query skips already-synced donations
+            }
         }).done(function(response) {
+            backfillRetries = 0; // Reset retries on success
+
             if (!response.success) {
                 backfillRunning = false;
                 $('.gwdp-progress-text').text('Error: ' + (response.data || 'Unknown'));
@@ -164,7 +179,6 @@
             var data = response.data;
             backfillTotal = data.total_unsynced + backfillProcessed;
             backfillProcessed += data.processed;
-            backfillOffset += data.batch_size;
 
             var pct = backfillTotal > 0 ? Math.round((backfillProcessed / backfillTotal) * 100) : 100;
             $('.gwdp-progress-fill').css('width', pct + '%');
@@ -173,7 +187,7 @@
             renderBackfillResults(data, false);
 
             if (data.has_more && backfillRunning) {
-                setTimeout(runBackfillBatch, 500);
+                backfillTimer = setTimeout(runBackfillBatch, 500);
             } else {
                 backfillRunning = false;
                 $('#gwdp-backfill-stop').hide();
@@ -182,11 +196,18 @@
                     $('.gwdp-progress-text').text('Complete! Processed ' + backfillProcessed + ' donations.');
                 }
             }
-        }).fail(function() {
-            backfillRunning = false;
-            $('.gwdp-progress-text').text('Request failed. Processed ' + backfillProcessed + ' so far.');
-            $('#gwdp-backfill-stop').hide();
-            $('#gwdp-backfill-run').prop('disabled', false);
+        }).fail(function(jqXHR, textStatus) {
+            backfillRetries++;
+            if (backfillRunning) {
+                // Auto-resume after a pause — server may have timed out but some donations still synced
+                var delay = Math.min(backfillRetries * 2000, 10000); // Back off: 2s, 4s, 6s... max 10s
+                $('.gwdp-progress-text').text('Request timed out, auto-resuming in ' + (delay/1000) + 's... (retry ' + backfillRetries + ', processed ' + backfillProcessed + ' so far)');
+                backfillTimer = setTimeout(runBackfillBatch, delay);
+            } else {
+                $('.gwdp-progress-text').text('Stopped. Processed ' + backfillProcessed + ' donations.');
+                $('#gwdp-backfill-stop').hide();
+                $('#gwdp-backfill-run').prop('disabled', false);
+            }
         });
     }
 

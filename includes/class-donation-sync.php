@@ -539,7 +539,8 @@ class GWDP_Donation_Sync {
     public function ajax_backfill_run(): void {
         check_ajax_referer('gwdp_admin_nonce', 'nonce');
         if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
-        wp_send_json_success($this->run_backfill(false, (int) ($_POST['batch_size'] ?? 10), (int) ($_POST['offset'] ?? 0)));
+        @set_time_limit(300); // Extend PHP timeout for batch processing
+        wp_send_json_success($this->run_backfill(false, (int) ($_POST['batch_size'] ?? 5), (int) ($_POST['offset'] ?? 0)));
     }
 
     public function ajax_sync_single(): void {
