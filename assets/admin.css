@@ -34,6 +34,44 @@
     border-radius: 4px;
     padding: 16px;
     text-align: center;
+    position: relative;
+    cursor: default;
+}
+.gwdp-stat-card[data-tip]::after {
+    content: attr(data-tip);
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 240px;
+    padding: 10px 12px;
+    background: #1d2327;
+    color: #f0f0f1;
+    font-size: 12.5px;
+    line-height: 1.5;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    text-align: left;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    z-index: 100000;
+}
+.gwdp-stat-card[data-tip]::before {
+    content: '';
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: #1d2327;
+    z-index: 100000;
+}
+.gwdp-stat-card[data-tip]:hover::after,
+.gwdp-stat-card[data-tip]:hover::before {
+    display: block;
 }
 .gwdp-stat-card.gwdp-stat-error .gwdp-stat-number {
     color: #dc3232;
@@ -272,20 +310,24 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    background: #0073aa;
+    background: #c3c4c7;
     color: #fff;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     font-style: normal;
     line-height: 1;
+    transition: background 0.15s ease;
+}
+.gwdp-info:hover .gwdp-info-icon {
+    background: #0073aa;
 }
 .gwdp-info .gwdp-info-tip {
     display: none;
     position: absolute;
-    bottom: calc(100% + 8px);
+    top: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%);
     width: 280px;
@@ -296,30 +338,24 @@
     line-height: 1.5;
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-    z-index: 100;
+    z-index: 100000;
     font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    text-align: left;
 }
 .gwdp-info .gwdp-info-tip::after {
     content: '';
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
     border: 6px solid transparent;
-    border-top-color: #1d2327;
+    border-bottom-color: #1d2327;
 }
 .gwdp-info:hover .gwdp-info-tip,
 .gwdp-info:focus .gwdp-info-tip {
     display: block;
-}
-/* Right-align tooltip when near left edge */
-.gwdp-info-tip.gwdp-tip-right {
-    left: 0;
-    transform: none;
-}
-.gwdp-info-tip.gwdp-tip-right::after {
-    left: 12px;
-    transform: none;
 }
 
 /* Help text blocks under sections */

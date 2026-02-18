@@ -69,6 +69,7 @@ class GWDP_Admin_Page {
                 <a href="?page=gwdp-sync&tab=backfill" class="nav-tab <?php echo $tab === 'backfill' ? 'nav-tab-active' : ''; ?>">Backfill</a>
                 <a href="?page=gwdp-sync&tab=match" class="nav-tab <?php echo $tab === 'match' ? 'nav-tab-active' : ''; ?>">Match Report</a>
                 <a href="?page=gwdp-sync&tab=docs" class="nav-tab <?php echo $tab === 'docs' ? 'nav-tab-active' : ''; ?>">Documentation</a>
+                <a href="?page=gwdp-sync&tab=changelog" class="nav-tab <?php echo $tab === 'changelog' ? 'nav-tab-active' : ''; ?>">Changelog</a>
             </nav>
 
             <div class="gwdp-tab-content">
@@ -79,6 +80,7 @@ class GWDP_Admin_Page {
                     'backfill'  => $this->render_backfill($sync),
                     'match'     => $this->render_match(),
                     'docs'      => $this->render_docs(),
+                    'changelog' => $this->render_changelog(),
                     default     => $this->render_dashboard($stats),
                 };
                 ?>
@@ -102,37 +104,37 @@ class GWDP_Admin_Page {
         </div>
 
         <div class="gwdp-stats-grid">
-            <div class="gwdp-stat-card">
+            <div class="gwdp-stat-card" data-tip="Donations successfully sent to DonorPerfect. Each synced donation has a matching gift record in DP.">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['success']); ?></div>
-                <div class="gwdp-stat-label">Synced<?php echo $this->info('Donations successfully sent to DonorPerfect. Each synced donation has a matching gift record in DP.'); ?></div>
+                <div class="gwdp-stat-label">Synced</div>
             </div>
-            <div class="gwdp-stat-card gwdp-stat-error">
+            <div class="gwdp-stat-card gwdp-stat-error" data-tip="Donations that failed to sync. Check the Sync Log tab for details. Common causes: API connection issues, missing codes in DP, or invalid data.">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['error']); ?></div>
-                <div class="gwdp-stat-label">Errors<?php echo $this->info('Donations that failed to sync. Check the Sync Log tab for details. Common causes: API connection issues, missing codes in DP, or invalid data.'); ?></div>
+                <div class="gwdp-stat-label">Errors</div>
             </div>
-            <div class="gwdp-stat-card">
+            <div class="gwdp-stat-card" data-tip="Donations that were already synced or had no valid data to send. These are safe to ignore.">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['skipped']); ?></div>
-                <div class="gwdp-stat-label">Skipped<?php echo $this->info('Donations that were already synced or had no valid data to send. These are safe to ignore.'); ?></div>
+                <div class="gwdp-stat-label">Skipped</div>
             </div>
-            <div class="gwdp-stat-card">
+            <div class="gwdp-stat-card" data-tip="New donor records created in DonorPerfect because no existing donor with the same email was found.">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['donors_created']); ?></div>
-                <div class="gwdp-stat-label">Donors Created<?php echo $this->info('New donor records created in DonorPerfect because no existing donor with the same email was found.'); ?></div>
+                <div class="gwdp-stat-label">Donors Created</div>
             </div>
-            <div class="gwdp-stat-card">
+            <div class="gwdp-stat-card" data-tip="Donations linked to existing DonorPerfect donors by matching email address. No duplicate donor was created.">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['donors_matched']); ?></div>
-                <div class="gwdp-stat-label">Donors Matched<?php echo $this->info('Donations linked to existing DonorPerfect donors by matching email address. No duplicate donor was created.'); ?></div>
+                <div class="gwdp-stat-label">Donors Matched</div>
             </div>
-            <div class="gwdp-stat-card">
+            <div class="gwdp-stat-card" data-tip="DonorPerfect &quot;pledges&quot; created to group recurring payments together. Each GiveWP subscription gets one, and all its payments are linked under it. This is just an organizational grouping -- not a fundraising goal.">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['pledges_created']); ?></div>
-                <div class="gwdp-stat-label">Recurring Groups<?php echo $this->info('DonorPerfect "pledges" created to group recurring payments together. Each GiveWP subscription gets one pledge, and all its payments are linked under it. This is just an organizational grouping in DP -- it does not track a fundraising goal.'); ?></div>
+                <div class="gwdp-stat-label">Recurring Groups</div>
             </div>
-            <div class="gwdp-stat-card">
+            <div class="gwdp-stat-card" data-tip="Individual recurring donation payments synced to DP. Each monthly payment from a GiveWP subscription becomes one gift in DonorPerfect.">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['recurring_gifts']); ?></div>
-                <div class="gwdp-stat-label">Recurring Gifts<?php echo $this->info('Individual recurring donation payments synced to DP. Each monthly (or periodic) payment from a GiveWP subscription becomes one gift in DonorPerfect.'); ?></div>
+                <div class="gwdp-stat-label">Recurring Gifts</div>
             </div>
-            <div class="gwdp-stat-card">
+            <div class="gwdp-stat-card" data-tip="Single, non-recurring donations synced to DonorPerfect.">
                 <div class="gwdp-stat-number"><?php echo esc_html($stats['onetime_gifts']); ?></div>
-                <div class="gwdp-stat-label">One-Time Gifts<?php echo $this->info('Single, non-recurring donations synced to DonorPerfect.'); ?></div>
+                <div class="gwdp-stat-label">One-Time Gifts</div>
             </div>
         </div>
 
@@ -508,6 +510,40 @@ class GWDP_Admin_Page {
 
         </div>
         <?php
+    }
+
+    // ─── Changelog ───
+
+    private function render_changelog(): void {
+        $file = GWDP_PLUGIN_DIR . 'CHANGELOG.md';
+        if (!file_exists($file)) {
+            echo '<p>Changelog not found.</p>';
+            return;
+        }
+        $md = file_get_contents($file);
+        // Simple markdown-to-HTML: headings, lists, bold, code, links
+        $lines = explode("\n", $md);
+        echo '<div class="gwdp-docs">';
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            } elseif (str_starts_with($line, '# ')) {
+                echo '<h2>' . esc_html(substr($line, 2)) . '</h2>';
+            } elseif (str_starts_with($line, '## ')) {
+                echo '<div class="gwdp-docs-section"><h3>' . esc_html(substr($line, 3)) . '</h3>';
+            } elseif (str_starts_with($line, '### ')) {
+                echo '<h4 style="margin:12px 0 4px;color:#1d2327;">' . esc_html(substr($line, 4)) . '</h4><ul>';
+            } elseif (str_starts_with($line, '- ')) {
+                $text = substr($line, 2);
+                $text = preg_replace('/`([^`]+)`/', '<code>$1</code>', esc_html($text));
+                $text = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $text);
+                echo '<li>' . $text . '</li>';
+            } else {
+                echo '<p>' . esc_html($line) . '</p>';
+            }
+        }
+        echo '</ul></div></div>';
     }
 
     // ─── Info tooltip helper ───
