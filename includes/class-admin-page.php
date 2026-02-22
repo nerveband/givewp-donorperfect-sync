@@ -38,7 +38,11 @@ class GWDP_Admin_Page {
 
     public function register_settings(): void {
         register_setting('gwdp_settings', 'gwdp_sync_enabled');
-        register_setting('gwdp_settings', 'gwdp_api_key');
+        register_setting('gwdp_settings', 'gwdp_api_key', [
+            'sanitize_callback' => function ($val) {
+                return trim(wp_unslash($val ?? ''));
+            },
+        ]);
         register_setting('gwdp_settings', 'gwdp_default_gl_code');
         register_setting('gwdp_settings', 'gwdp_default_campaign');
         register_setting('gwdp_settings', 'gwdp_default_solicit_code');
@@ -207,7 +211,9 @@ class GWDP_Admin_Page {
     private function render_settings(): void {
         if (isset($_POST['gwdp_settings_nonce']) && wp_verify_nonce($_POST['gwdp_settings_nonce'], 'gwdp_save_settings')) {
             update_option('gwdp_sync_enabled', isset($_POST['gwdp_sync_enabled']) ? '1' : '0');
-            update_option('gwdp_api_key', sanitize_text_field($_POST['gwdp_api_key'] ?? ''));
+            // Do NOT use sanitize_text_field() — it strips percent-encoded chars (%2f, %2b)
+            // that are part of valid DonorPerfect API keys (base64-encoded with URL encoding).
+            update_option('gwdp_api_key', trim(wp_unslash($_POST['gwdp_api_key'] ?? '')));
             update_option('gwdp_default_gl_code', sanitize_text_field($_POST['gwdp_default_gl_code'] ?? 'UN'));
             update_option('gwdp_default_campaign', sanitize_text_field($_POST['gwdp_default_campaign'] ?? ''));
             update_option('gwdp_default_solicit_code', sanitize_text_field($_POST['gwdp_default_solicit_code'] ?? ''));
